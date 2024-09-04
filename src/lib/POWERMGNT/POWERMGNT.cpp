@@ -91,6 +91,11 @@ extern bool isDomain868();
 #else
 static const int16_t *powerValues = nullptr;
 #endif
+#if defined(POWER_OUTPUT_VALUES_DUAL)
+static const int16_t powerValuesDual[] = POWER_OUTPUT_VALUES_DUAL;
+#else
+static const int16_t *powerValuesDual = nullptr;
+#endif
 #endif
 
 static int8_t powerCaliValues[PWR_COUNT] = {0};
@@ -312,7 +317,7 @@ void POWERMGNT::setPower(PowerLevels_e Power)
 #endif
 
 #if defined(RADIO_LR1121)
-    if (POWER_OUTPUT_VALUES_DUAL != nullptr)
+    if (powerValuesDual != nullptr)
     {
         Radio.SetOutputPower(powerValuesDual[Power - MinPower], false); // Set the high frequency power setting.
     }

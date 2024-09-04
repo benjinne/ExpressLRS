@@ -257,14 +257,15 @@ void LR1121Driver::SetDioAsRfSwitch()
     uint8_t switchbuf[8];
     if (LR1121_RFSW_CTRL_COUNT == 8)
     {
-        switchbuf[0] = LR1121_RFSW_CTRL[0]; // RfswEnable
-        switchbuf[1] = LR1121_RFSW_CTRL[1]; // RfSwStbyCfg
-        switchbuf[2] = LR1121_RFSW_CTRL[2]; // RfSwRxCfg
-        switchbuf[3] = LR1121_RFSW_CTRL[3]; // RfSwTxCfg
-        switchbuf[4] = LR1121_RFSW_CTRL[4]; // RfSwTxHPCfg
-        switchbuf[5] = LR1121_RFSW_CTRL[5]; // RfSwTxHfCfg
-        switchbuf[6] = LR1121_RFSW_CTRL[6]; // Unused
-        switchbuf[7] = LR1121_RFSW_CTRL[7]; // RfSwWifiCfg - Each bit indicates the state of the relevant RFSW DIO when in Wi-Fi scanning mode or high frequency RX mode (LR1110_H1_UM_V1-7-1.pdf)
+        const uint8_t rfSwCtrl[] = LR1121_RFSW_CTRL;
+        switchbuf[0] = rfSwCtrl[0]; // RfswEnable
+        switchbuf[1] = rfSwCtrl[1]; // RfSwStbyCfg
+        switchbuf[2] = rfSwCtrl[2]; // RfSwRxCfg
+        switchbuf[3] = rfSwCtrl[3]; // RfSwTxCfg
+        switchbuf[4] = rfSwCtrl[4]; // RfSwTxHPCfg
+        switchbuf[5] = rfSwCtrl[5]; // RfSwTxHfCfg
+        switchbuf[6] = rfSwCtrl[6]; // Unused
+        switchbuf[7] = rfSwCtrl[7]; // RfSwWifiCfg - Each bit indicates the state of the relevant RFSW DIO when in Wi-Fi scanning mode or high frequency RX mode (LR1110_H1_UM_V1-7-1.pdf)
     }
     else
     {
