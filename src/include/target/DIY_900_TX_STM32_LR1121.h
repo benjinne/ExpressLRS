@@ -39,3 +39,5 @@
 #define MaxPower                 PWR_100mW
 #define DefaultPower             PWR_100mW
 #define POWER_OUTPUT_VALUES      {12,16,19,22}
+#define POWER_OUTPUT_VALUES_COUNT 4
+#define POWER_OUTPUT_VALUES_DUAL_COUNT 0
