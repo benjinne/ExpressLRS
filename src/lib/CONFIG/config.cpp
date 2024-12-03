@@ -180,7 +180,7 @@ void TxConfig::Load()
         if (nvs_get_u8(handle, "backpackdisable", &value8) == ESP_OK)
             m_config.backpackDisable = value8;
         if (nvs_get_u8(handle, "backpacktlmen", &value8) == ESP_OK)
-            m_config.backpackTlmEnabled = value8;
+            m_config.backpackTlmMode = value8;
     }
 
     for(unsigned i=0; i<CONFIG_TX_MODEL_CNT; i++)
@@ -339,7 +339,7 @@ TxConfig::Commit()
         nvs_set_u8(handle, "fanthresh", m_config.powerFanThreshold);
 
         nvs_set_u8(handle, "backpackdisable", m_config.backpackDisable);
-        nvs_set_u8(handle, "backpacktlmen", m_config.backpackTlmEnabled);
+        nvs_set_u8(handle, "backpacktlmen", m_config.backpackTlmMode);
         nvs_set_u8(handle, "dvraux", m_config.dvrAux);
         nvs_set_u8(handle, "dvrstartdelay", m_config.dvrStartDelay);
         nvs_set_u8(handle, "dvrstopdelay", m_config.dvrStopDelay);
@@ -441,7 +441,6 @@ TxConfig::SetLinkMode(uint8_t linkMode)
         {
             m_model->tlm = TLM_RATIO_1_2;
             m_model->switchMode = smHybridOr16ch; // Force Hybrid / 16ch/2 switch modes for mavlink
-            m_config.backpackTlmEnabled = false; // Disable backpack telemetry since it'd be MSP mixed with MAVLink
         }
         m_modified |= MODEL_CHANGED | MAIN_CHANGED;
     }
@@ -577,11 +576,11 @@ TxConfig::SetBackpackDisable(bool backpackDisable)
 }
 
 void
-TxConfig::SetBackpackTlmEnabled(bool enabled)
+TxConfig::SetBackpackTlmMode(uint8_t mode)
 {
-    if (m_config.backpackTlmEnabled != enabled)
+    if (m_config.backpackTlmMode != mode)
     {
-        m_config.backpackTlmEnabled = enabled;
+        m_config.backpackTlmMode = mode;
         m_modified |= MAIN_CHANGED;
     }
 }
@@ -655,8 +654,10 @@ TxConfig::SetDefaults(bool commit)
     for (unsigned i=0; i<CONFIG_TX_MODEL_CNT; i++)
     {
         SetModelId(i);
-        #if defined(RADIO_SX127X) || defined(RADIO_LR1121)
+        #if defined(RADIO_SX127X)
             SetRate(enumRatetoIndex(RATE_LORA_200HZ));
+        #elif defined(RADIO_LR1121)
+            SetRate(enumRatetoIndex(POWER_OUTPUT_VALUES_COUNT == 0 ? RATE_LORA_250HZ : RATE_LORA_200HZ));
         #elif defined(RADIO_SX128X)
             SetRate(enumRatetoIndex(RATE_LORA_250HZ));
         #endif
@@ -1232,6 +1233,23 @@ void RxConfig::SetBindStorage(rx_config_bindstorage_t value)
         // If switching away from returnable, revert
         ReturnLoan();
         m_config.bindStorage = value;
+        m_modified = true;
+    }
+}
+
+void RxConfig::SetTargetSysId(uint8_t value)
+{
+    if (m_config.targetSysId != value)
+    {
+        m_config.targetSysId = value;
+        m_modified = true;
+    }
+}
+void RxConfig::SetSourceSysId(uint8_t value)
+{
+    if (m_config.sourceSysId != value)
+    {
+        m_config.sourceSysId = value;
         m_modified = true;
     }
 }

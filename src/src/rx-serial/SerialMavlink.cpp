@@ -4,6 +4,9 @@
 #include "device.h"
 #include "common.h"
 #include "CRSF.h"
+#include "config.h"
+
+#define MAVLINK_RC_PACKET_INTERVAL 10
 
 // Variables / constants for Mavlink //
 FIFO<MAV_INPUT_BUF_LEN> mavlinkInputBuffer;
@@ -49,14 +52,16 @@ void SerialMavlink::sendQueuedData(uint32_t maxBytesToSend)
 
 SerialMavlink::SerialMavlink(Stream &out, Stream &in):
     SerialIO(&out, &in),
-    // 255 is typically used by the GCS, for RC override to work in ArduPilot `SYSID_MYGCS` must be set to this value (255 is the default)
-    this_system_id(255),
-    // Strictly this is not a valid source component ID
-    this_component_id(MAV_COMPONENT::MAV_COMP_ID_ALL),
-    // Assume vehicle system ID is 1, ArduPilot's `SYSID_THISMAV` parameter. (1 is the default)
-    target_system_id(1),
-    // Send to AutoPilot component
-    target_component_id(MAV_COMPONENT::MAV_COMP_ID_AUTOPILOT1)
+    
+    //system ID of the device component sending command to FC, can be set using lua options, 0 is the default value for initialized storage, treat it as 255 which is commonly used as GCS SysID
+    this_system_id(config.GetSourceSysId() ? config.GetSourceSysId() : 255),
+    //use telemetry radio compId as we are providing radio status messages and pass telemetry
+    this_component_id(MAV_COMPONENT::MAV_COMP_ID_TELEMETRY_RADIO),
+
+    // system ID of vehicle we want to control must be the same as target vehicle, can be set using lua options, 0 is the default value for initialized storage, treat it as 1 which is commonly used as UAV SysID in 1:1 networks
+    target_system_id(config.GetTargetSysId() ? config.GetTargetSysId() : 1),
+    // Send to all components as we may have ex. gimbal that listens to RC instead of using Autopilot driver
+    target_component_id(MAV_COMPONENT::MAV_COMP_ID_ALL)
 {
 }
 
@@ -93,7 +98,7 @@ uint32_t SerialMavlink::sendRCFrame(bool frameAvailable, bool frameMissed, uint3
     uint16_t len = mavlink_msg_to_send_buffer(buf, &msg);
     _outputPort->write(buf, len);
     
-    return DURATION_IMMEDIATELY;
+    return MAVLINK_RC_PACKET_INTERVAL;
 }
 
 int SerialMavlink::getMaxSerialReadSize()

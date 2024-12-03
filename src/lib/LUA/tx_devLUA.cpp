@@ -289,7 +289,7 @@ static struct luaItem_selection luaHeadTrackingStartChannel = {
 static struct luaItem_selection luaBackpackTelemetry = {
     {"Telemetry", CRSF_TEXT_SELECTION},
     0, // value
-    luastrOffOn,
+    "Off;ESPNOW;WiFi",
     STR_EMPTYSPACE};
 
 static struct luaItem_string luaBackpackVersion = {
@@ -307,6 +307,7 @@ extern void ResetPower();
 extern uint8_t adjustPacketRateForBaud(uint8_t rate);
 extern void SetSyncSpam();
 extern bool RxWiFiReadyToSend;
+extern bool BackpackTelemReadyToSend;
 #if defined(USE_TX_BACKPACK)
 extern bool TxBackpackWiFiReadyToSend;
 extern bool VRxBackpackWiFiReadyToSend;
@@ -588,11 +589,12 @@ static void recalculatePacketRateOptions(int minInterval)
     for (int i=0 ; i < RATE_MAX ; i++)
     {
         uint8_t rate = i;
-#if defined(RADIO_LR1121) // Janky fix to order menu correctly
-        rate = (rate + 4) % RATE_MAX;
-#endif
         rate = RATE_MAX - 1 - rate;
-        bool rateAllowed = get_elrs_airRateConfig(rate)->interval >= minInterval;
+        bool rateAllowed = (get_elrs_airRateConfig(rate)->interval * get_elrs_airRateConfig(rate)->numOfSends) >= minInterval;
+
+        // Skip unsupported modes for hardware with only a single LR1121 or with a single RF path
+        rateAllowed &= isSupportedRFRate(rate);
+
         const char *semi = strchrnul(pos, ';');
         if (rateAllowed)
         {
@@ -832,7 +834,8 @@ static void registerLuaParameters()
           luaBackpackFolder.common.id);
       registerLUAParameter(
             &luaBackpackTelemetry, [](luaPropertiesCommon *item, uint8_t arg) {
-                config.SetBackpackTlmEnabled(arg);
+                config.SetBackpackTlmMode(arg);
+                BackpackTelemReadyToSend = true;
             }, luaBackpackFolder.common.id);
 
       registerLUAParameter(&luaBackpackVersion, nullptr, luaBackpackFolder.common.id);
@@ -915,7 +918,7 @@ static int event()
     setLuaTextSelectionValue(&luaDvrStopDelay, config.GetBackpackDisable() ? 0 : config.GetDvrStopDelay());
     setLuaTextSelectionValue(&luaHeadTrackingEnableChannel, config.GetBackpackDisable() ? 0 : config.GetPTREnableChannel());
     setLuaTextSelectionValue(&luaHeadTrackingStartChannel, config.GetBackpackDisable() ? 0 : config.GetPTRStartChannel());
-    setLuaTextSelectionValue(&luaBackpackTelemetry, config.GetBackpackTlmEnabled() ? 1 : 0);
+    setLuaTextSelectionValue(&luaBackpackTelemetry, config.GetBackpackDisable() ? 0 : config.GetBackpackTlmMode());
     setLuaStringValue(&luaBackpackVersion, backpackVersion);
   }
 #if defined(TARGET_TX_FM30)
